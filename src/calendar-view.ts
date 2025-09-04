@@ -86,7 +86,12 @@ export class CalendarView extends ItemView {
         this.setLoadingState(true);
 
         try {
-            const events = await getCalendarEvents(this.settings, this.currentDate);
+            const allEvents = await getCalendarEvents(this.settings, this.currentDate);
+            const events = allEvents?.filter(event => {
+                const isAllDay = !event.start.dateTime;
+                return !(isAllDay && !this.settings.showAllDayEvents);
+            });
+
             if (events && events.length > 0) {
                 let tableBody = table.createTBody();
                 for (const event of events) {
@@ -94,10 +99,6 @@ export class CalendarView extends ItemView {
                         continue;
                     }
 
-                    const isAllDay = !event.start.dateTime;
-                    if (isAllDay && !this.settings.showAllDayEvents) {
-                        continue;
-                    }
                     let row = tableBody.createEl('tr');
 
                     let timeCell = row.createEl('td');
