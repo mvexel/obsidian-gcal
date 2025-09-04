@@ -1,134 +1,197 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, Notice } from 'obsidian';
+import { GCalPluginSettings, DEFAULT_SETTINGS, getCalendarEvents, getAvailableCalendars, CalendarInfo } from './src/google-calendar';
+import { CalendarView, CALENDAR_VIEW_TYPE } from './src/calendar-view';
 
-// Remember to rename these classes and interfaces!
+export default class GCalPlugin extends Plugin {
+    settings: GCalPluginSettings;
 
-interface MyPluginSettings {
-	mySetting: string;
+    async onload() {
+        await this.loadSettings();
+
+        this.registerView(
+            CALENDAR_VIEW_TYPE,
+            (leaf) => new CalendarView(leaf, this.settings)
+        );
+
+        this.addCommand({
+            id: 'gcal:open-view',
+            name: 'Open Google Calendar view',
+            callback: () => {
+                this.activateView();
+            }
+        });
+
+        this.addCommand({
+            id: 'gcal:insert-events',
+            name: 'Insert today\'s events',
+            editorCallback: async (editor) => {
+                const events = await getCalendarEvents(this.settings);
+                if (events && events.length > 0) {
+                    let output = `## ${new Date().toDateString()} Events\n\n`;
+                    for (const event of events) {
+                        if (!event.start) continue;
+                        let time;
+                        if (event.start.dateTime && event.end?.dateTime) {
+                            const startTime = new Date(event.start.dateTime);
+                            const endTime = new Date(event.end.dateTime);
+                            const startStr = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            const endStr = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            time = `${startStr}-${endStr}`;
+                        } else {
+                            time = 'All-day';
+                        }
+                        output += `- **${time}**: ${event.summary || 'Untitled'}`;
+                        if (event.hangoutLink) {
+                            output += ` [Join Meeting](${event.hangoutLink})`;
+                        }
+                        output += '\n';
+                    }
+                    editor.replaceSelection(output);
+                } else {
+                    editor.replaceSelection('No events today.\n');
+                }
+            }
+        });
+
+        this.addSettingTab(new GCalSettingTab(this.app, this));
+    }
+
+    async activateView() {
+        this.app.workspace.detachLeavesOfType(CALENDAR_VIEW_TYPE);
+
+        const rightLeaf = this.app.workspace.getRightLeaf(false);
+        if (rightLeaf) {
+            await rightLeaf.setViewState({
+                type: CALENDAR_VIEW_TYPE,
+                active: true,
+            });
+        }
+
+        const leaf = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE)[0];
+        if (leaf) {
+            this.app.workspace.revealLeaf(leaf);
+        }
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
+        
+        const calendarViews = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE);
+        calendarViews.forEach(leaf => {
+            const view = leaf.view as CalendarView;
+            view.updateSettings(this.settings);
+        });
+    }
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+class GCalSettingTab extends PluginSettingTab {
+    plugin: GCalPlugin;
+    private availableCalendars: CalendarInfo[] = [];
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+    constructor(app: App, plugin: GCalPlugin) {
+        super(app, plugin);
+        this.plugin = plugin;
+    }
 
-	async onload() {
-		await this.loadSettings();
+    display(): void {
+        const { containerEl } = this;
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+        containerEl.empty();
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+        new Setting(containerEl)
+            .setName('Client ID')
+            .setDesc('Google Calendar API Client ID')
+            .addText(text => text
+                .setPlaceholder('Enter your client ID')
+                .setValue(this.plugin.settings.clientId)
+                .onChange(async (value) => {
+                    if (value.trim().length === 0) {
+                        new Notice('Client ID cannot be empty');
+                        return;
+                    }
+                    this.plugin.settings.clientId = value.trim();
+                    await this.plugin.saveSettings();
+                }));
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+        new Setting(containerEl)
+            .setName('Client Secret')
+            .setDesc('Google Calendar API Client Secret')
+            .addText(text => text
+                .setPlaceholder('Enter your client secret')
+                .setValue(this.plugin.settings.clientSecret ? '••••••••••••••••' : '')
+                .onChange(async (value) => {
+                    if (value !== '••••••••••••••••') {
+                        if (value.trim().length === 0) {
+                            new Notice('Client Secret cannot be empty');
+                            return;
+                        }
+                        this.plugin.settings.clientSecret = value.trim();
+                        await this.plugin.saveSettings();
+                    }
+                }));
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
+        new Setting(containerEl)
+            .setName('Refresh Token')
+            .setDesc('Google Calendar API Refresh Token')
+            .addText(text => text
+                .setPlaceholder('Enter your refresh token')
+                .setValue(this.plugin.settings.refreshToken ? '••••••••••••••••' : '')
+                .onChange(async (value) => {
+                    if (value !== '••••••••••••••••') {
+                        this.plugin.settings.refreshToken = value;
+                        await this.plugin.saveSettings();
+                    }
+                }));
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+        new Setting(containerEl)
+            .setName('Discover Calendars')
+            .setDesc('Load your available Google Calendars')
+            .addButton(button => button
+                .setButtonText('Load Calendars')
+                .onClick(async () => {
+                    button.setButtonText('Loading...');
+                    button.setDisabled(true);
+                    this.availableCalendars = await getAvailableCalendars(this.plugin.settings);
+                    button.setButtonText('Load Calendars');
+                    button.setDisabled(false);
+                    this.display();
+                }));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+        if (this.availableCalendars.length > 0) {
+            containerEl.createEl('h3', { text: 'Select Calendars' });
+            
+            for (const cal of this.availableCalendars) {
+                new Setting(containerEl)
+                    .setName(cal.summary + (cal.primary ? ' (Primary)' : ''))
+                    .setDesc(cal.id)
+                    .addToggle(toggle => toggle
+                        .setValue(this.plugin.settings.calendarIds.includes(cal.id))
+                        .onChange(async (value) => {
+                            if (value) {
+                                if (!this.plugin.settings.calendarIds.includes(cal.id)) {
+                                    this.plugin.settings.calendarIds.push(cal.id);
+                                }
+                            } else {
+                                this.plugin.settings.calendarIds = this.plugin.settings.calendarIds.filter(id => id !== cal.id);
+                            }
+                            await this.plugin.saveSettings();
+                        }));
+            }
+        } else {
+            new Setting(containerEl)
+                .setName('Calendar IDs (Advanced)')
+                .setDesc('Comma-separated list of calendar IDs if you know them')
+                .addTextArea(text => text
+                    .setPlaceholder('primary, other-calendar@group.calendar.google.com')
+                    .setValue(this.plugin.settings.calendarIds.join(', '))
+                    .onChange(async (value) => {
+                        this.plugin.settings.calendarIds = value.split(',').map(id => id.trim()).filter(id => id.length > 0);
+                        await this.plugin.saveSettings();
+                    }));
+        }
+    }
 }

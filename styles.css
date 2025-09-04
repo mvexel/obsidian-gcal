@@ -1,8 +1,63 @@
-/*
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.calendar-header div {
+    display: flex;
+    gap: 5px;
+}
 
-If your plugin does not need CSS, delete this file.
+.calendar-header h2 {
+    margin: 0;
+}
 
-*/
+.calendar-header button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+.error {
+    color: var(--text-error);
+    text-align: center;
+    padding: 20px;
+}
+
+.meet-link {
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.meet-link:hover {
+    text-decoration: underline;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+table td:first-child {
+    width: 120px;
+    font-family: var(--font-monospace);
+    color: var(--text-muted);
+}
+
+.calendar-source {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    font-style: italic;
+}
