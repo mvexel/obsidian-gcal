@@ -102,6 +102,12 @@ class GCalSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
+        containerEl.createEl('h3', { text: 'Google Calendar Authentication' });
+        containerEl.createEl('p', { 
+            text: 'See README for instructions on setting up Google Calendar API credentials.',
+            cls: 'setting-item-description'
+        });
+
         new Setting(containerEl)
             .setName('Client ID')
             .setDesc('Google Calendar API Client ID')
@@ -147,6 +153,12 @@ class GCalSettingTab extends PluginSettingTab {
                     }
                 }));
 
+        containerEl.createEl('h3', { text: 'Additional Calendars' });
+        containerEl.createEl('p', { 
+            text: 'By default, your primary calendar is used. To add other calendars, discover them first:',
+            cls: 'setting-item-description'
+        });
+
         new Setting(containerEl)
             .setName('Discover Calendars')
             .setDesc('Load your available Google Calendars')
@@ -162,11 +174,9 @@ class GCalSettingTab extends PluginSettingTab {
                 }));
 
         if (this.availableCalendars.length > 0) {
-            containerEl.createEl('h3', { text: 'Select Calendars' });
-            
-            for (const cal of this.availableCalendars) {
+            for (const cal of this.availableCalendars.filter(c => !c.primary)) {
                 new Setting(containerEl)
-                    .setName(cal.summary + (cal.primary ? ' (Primary)' : ''))
+                    .setName(cal.summary)
                     .setDesc(cal.id)
                     .addToggle(toggle => toggle
                         .setValue(this.plugin.settings.calendarIds.includes(cal.id))
@@ -181,17 +191,6 @@ class GCalSettingTab extends PluginSettingTab {
                             await this.plugin.saveSettings();
                         }));
             }
-        } else {
-            new Setting(containerEl)
-                .setName('Calendar IDs (Advanced)')
-                .setDesc('Comma-separated list of calendar IDs if you know them')
-                .addTextArea(text => text
-                    .setPlaceholder('primary, other-calendar@group.calendar.google.com')
-                    .setValue(this.plugin.settings.calendarIds.join(', '))
-                    .onChange(async (value) => {
-                        this.plugin.settings.calendarIds = value.split(',').map(id => id.trim()).filter(id => id.length > 0);
-                        await this.plugin.saveSettings();
-                    }));
         }
     }
 }

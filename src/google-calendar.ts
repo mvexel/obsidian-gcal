@@ -43,7 +43,7 @@ export async function getCalendarEvents(settings: GCalPluginSettings, date?: Dat
         const calendarsInfo = await calendar.calendarList.list();
         const calendarMap = new Map(calendarsInfo.data.items?.map(cal => [cal.id, cal.summary]) || []);
         
-        const calendarIds = settings.calendarIds.length > 0 ? settings.calendarIds : ['primary'];
+        const calendarIds = [...new Set(['primary', ...settings.calendarIds])];
         
         for (const calendarId of calendarIds) {
             const res = await calendar.events.list({
