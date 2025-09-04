@@ -14,7 +14,7 @@ export class CalendarView extends ItemView {
         this.settings = settings;
         this.currentDate = new Date();
     }
-    
+
     updateSettings(settings: GCalPluginSettings) {
         this.settings = settings;
         this.render();
@@ -37,7 +37,7 @@ export class CalendarView extends ItemView {
         container.empty();
 
         const header = container.createEl('div', { cls: 'calendar-header' });
-        
+
         const leftControls = header.createEl('div');
         this.navigationButtons.prev = leftControls.createEl('button', { text: '<' });
         this.navigationButtons.prev.addEventListener('click', () => {
@@ -45,9 +45,9 @@ export class CalendarView extends ItemView {
             this.currentDate.setDate(this.currentDate.getDate() - 1);
             this.render();
         });
-        
+
         header.createEl('h2', { text: this.currentDate.toDateString() });
-        
+
         const rightControls = header.createEl('div');
         const todayButton = rightControls.createEl('button', { text: 'Today' });
         todayButton.addEventListener('click', () => {
@@ -73,18 +73,18 @@ export class CalendarView extends ItemView {
 
     async render(table?: HTMLTableElement) {
         const container = this.containerEl.children[1];
-        
+
         if (!table) {
             table = container.querySelector('table') as HTMLTableElement;
             const header = this.containerEl.querySelector('.calendar-header h2') as HTMLHeadingElement;
             header.setText(this.currentDate.toDateString());
         }
-        
+
         table.empty();
         container.querySelectorAll('p').forEach(p => p.remove());
 
         this.setLoadingState(true);
-        
+
         try {
             const events = await getCalendarEvents(this.settings, this.currentDate);
             if (events && events.length > 0) {
@@ -93,8 +93,13 @@ export class CalendarView extends ItemView {
                     if (!event.start) {
                         continue;
                     }
+
+                    const isAllDay = !event.start.dateTime;
+                    if (isAllDay && !this.settings.showAllDayEvents) {
+                        continue;
+                    }
                     let row = tableBody.createEl('tr');
-                    
+
                     let timeCell = row.createEl('td');
                     let time, duration = '';
                     if (event.start.dateTime && event.end?.dateTime) {
@@ -113,7 +118,7 @@ export class CalendarView extends ItemView {
                         time = 'All-day';
                     }
                     timeCell.setText(time + duration);
-                    
+
                     let titleCell = row.createEl('td');
                     if (event.hangoutLink) {
                         let meetLink = titleCell.createEl('a', {
@@ -126,9 +131,9 @@ export class CalendarView extends ItemView {
                     } else {
                         titleCell.setText(event.summary || '');
                     }
-                    
+
                     if (event.calendarName && event.calendarName !== 'primary') {
-                        titleCell.createEl('span', { 
+                        titleCell.createEl('span', {
                             text: ` • ${event.calendarName}`,
                             cls: 'calendar-source'
                         });
@@ -148,10 +153,10 @@ export class CalendarView extends ItemView {
         this.isLoading = loading;
         this.navigationButtons.prev.disabled = loading;
         this.navigationButtons.next.disabled = loading;
-        
+
         const container = this.containerEl.children[1];
         const existingLoader = container.querySelector('.loading');
-        
+
         if (loading && !existingLoader) {
             container.createEl('div', { text: 'Loading...', cls: 'loading' });
         } else if (!loading && existingLoader) {

@@ -6,6 +6,7 @@ export interface GCalPluginSettings {
     clientSecret: string;
     refreshToken: string;
     calendarIds: string[];
+    showAllDayEvents: boolean;
 }
 
 export interface CalendarInfo {
@@ -18,7 +19,8 @@ export const DEFAULT_SETTINGS: GCalPluginSettings = {
     clientId: '',
     clientSecret: '',
     refreshToken: '',
-    calendarIds: []
+    calendarIds: [],
+    showAllDayEvents: true
 }
 
 export async function getCalendarEvents(settings: GCalPluginSettings, date?: Date) {

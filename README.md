@@ -1,6 +1,6 @@
-# Obsidian Google Calendar Sync
+# Obsidian Google Calendar Sidebar Plugin
 
-This plugin syncs your Google Calendar events to Obsidian.
+This plugin adds a sidebar pane that can display google calendar events for the day.
 
 ## How to Use
 
@@ -10,7 +10,7 @@ This plugin syncs your Google Calendar events to Obsidian.
 
 ## Getting Google Calendar API Credentials
 
-To use this plugin, you need to get a Client ID, Client Secret, and Refresh Token from the Google API Console.
+To use this plugin, you need to get a Client ID, Client Secret, and Refresh Token from Google. This process sucks, I don't know if I can make it any easier, but on the plus side you only have to do it once.
 
 1.  **Go to the [Google API Console](https://console.developers.google.com/).**
 2.  **Create a new project.**
@@ -30,18 +30,19 @@ To use this plugin, you need to get a Client ID, Client Secret, and Refresh Toke
     *   Enter your OAuth Client ID and Client Secret.
     *   In the "Select & authorize APIs" step, find "Google Calendar API v3" and select the `https://www.googleapis.com/auth/calendar.readonly` scope.
     *   Click "Authorize APIs".
-    *   You will be prompted to sign in to your Google account and grant access.
+    *   You will be prompted to sign in to your Google account and grant access. (see note below on warnings you may get)
     *   In the "Exchange authorization code for tokens" step, click "Exchange authorization code for tokens".
     *   Copy the "Refresh token".
 
-## Bypassing the Google Verification Warning
+### Bypassing the Google Verification Warning
 
-When you try to get a refresh token, you might see a warning that the app is not verified. This is expected. To bypass this warning, you need to add your Google account as a tester.
+When you try to get a refresh token, you might see a warning that the app is not verified. This is expected...I guess? To bypass this warning, you need to add your Google account as a tester.
 
 1.  Go to the [Google API Console](https://console.developers.google.com/).
 2.  Go to the "OAuth consent screen" page.
-3.  Under "Test users", click "Add users".
-4.  Enter your Google account email address and click "Save".
+3.  Go to the "Audiences" tab.
+4.  Under "Test users", click "Add users".
+5.  Enter your Google account email address and click "Save".
 
 After adding yourself as a tester, you should be able to get a refresh token without any warnings.
 
@@ -60,6 +61,9 @@ To sideload this plugin, you need to manually copy the plugin files to your Obsi
     *   Close and reopen Obsidian to load the new plugin.
 5.  **Enable the plugin.**
     *   In Obsidian, go to `Settings` > `Community plugins` and enable "Google Calendar Sync".
+
+-----
+*All the stuff below is from the template, I may need it so I am going to leave it here for now.*
 
 ## Releasing new releases
 

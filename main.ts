@@ -79,7 +79,7 @@ export default class GCalPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
-        
+
         const calendarViews = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE);
         calendarViews.forEach(leaf => {
             const view = leaf.view as CalendarView;
@@ -103,7 +103,7 @@ class GCalSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h3', { text: 'Google Calendar Authentication' });
-        containerEl.createEl('p', { 
+        containerEl.createEl('p', {
             text: 'See README for instructions on setting up Google Calendar API credentials.',
             cls: 'setting-item-description'
         });
@@ -153,8 +153,18 @@ class GCalSettingTab extends PluginSettingTab {
                     }
                 }));
 
+        new Setting(containerEl)
+            .setName('Show All-Day Events')
+            .setDesc('Display all-day events in the calendar view')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showAllDayEvents)
+                .onChange(async (value) => {
+                    this.plugin.settings.showAllDayEvents = value;
+                    await this.plugin.saveSettings();
+                }));
+
         containerEl.createEl('h3', { text: 'Additional Calendars' });
-        containerEl.createEl('p', { 
+        containerEl.createEl('p', {
             text: 'By default, your primary calendar is used. To add other calendars, discover them first:',
             cls: 'setting-item-description'
         });

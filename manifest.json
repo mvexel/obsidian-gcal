@@ -1,11 +1,11 @@
 {
-	"id": "gcal-inserter",
-	"name": "Google Calendar Inserter",
+	"id": "gcal-sidebar",
+	"name": "Your Google Calendar in a Sidebar",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Insert your Google Calendar events into an Obsidian note.",
+	"description": "View your Google Calendar events in a sidebar within Obsidian.",
 	"author": "Martijn van Exel",
 	"authorUrl": "https://ma.rtijn.org/",
 	"fundingUrl": "",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }

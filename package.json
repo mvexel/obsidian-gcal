@@ -1,7 +1,7 @@
 {
-	"name": "gcal-inserter",
+	"name": "gcal-sidebar",
 	"version": "1.0.0",
-	"description": "Sync your Google Calendar events to Obsidian.",
+	"description": "View your Google Calendar events in a sidebar within Obsidian.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
