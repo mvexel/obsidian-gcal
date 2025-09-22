@@ -103,10 +103,16 @@ class GCalSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h3', { text: 'Google Calendar Authentication' });
-        containerEl.createEl('p', {
-            text: 'See README for instructions on setting up Google Calendar API credentials.',
+        const readmeEl = containerEl.createEl('p', {
             cls: 'setting-item-description'
         });
+        readmeEl.innerHTML = 'See <a href="https://github.com/mvexel/obsidian-gcal/blob/main/README.md" target="_blank">README</a> for instructions on setting up Google Calendar API credentials.';
+
+        const githubLinkEl = containerEl.createEl('p', {
+            cls: 'setting-item-description'
+        });
+        githubLinkEl.innerHTML = `📋 <a href="https://github.com/mvexel/obsidian-gcal" target="_blank">GitHub Repository</a> - Report issues, contribute, or view source code`;
+        githubLinkEl.style.marginBottom = '20px';
 
         new Setting(containerEl)
             .setName('Client ID')
